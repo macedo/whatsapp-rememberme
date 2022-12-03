@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"regexp"
 	"syscall"
 
 	"github.com/lib/pq"
 	"github.com/mdp/qrterminal"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/store/sqlstore"
+	"go.mau.fi/whatsmeow/types/events"
 	waLog "go.mau.fi/whatsmeow/util/log"
 )
 
@@ -18,6 +20,49 @@ var client *whatsmeow.Client
 
 func init() {
 	sqlstore.PostgresArrayWrapper = pq.Array
+}
+
+func HelloWorldHandler(evt interface{}) {
+	switch evtType := evt.(type) {
+	case *events.Message:
+		message := parseConversation(evtType.Message.GetConversation())
+		switch message.Program {
+		case "remember me":
+			fmt.Println("remember me program")
+		default:
+			client.Log.Debugf("unhandled program %s", message.Program)
+		}
+		fmt.Printf("%v\n", message)
+	}
+}
+
+type Message struct {
+	Program string
+	Todo    string
+	When    string
+}
+
+func parseConversation(conversation string) *Message {
+	var message = &Message{}
+	re := regexp.MustCompile(`^(?P<program>remember me) ?(?P<todo>[0-9a-z ]+)? ?(?P<when>@ [0-9a-z/-:]+)?$`)
+	result := make(map[string]string)
+	matches := re.FindStringSubmatch(conversation)
+
+	if len(matches) == 0 {
+		return message
+	}
+
+	for i, name := range re.SubexpNames() {
+		if i != 0 && name != "" {
+			result[name] = matches[i]
+		}
+	}
+
+	message.Program = result["program"]
+	message.Todo = result["todo"]
+	message.When = result["when"]
+
+	return message
 }
 
 func main() {
@@ -30,6 +75,8 @@ func main() {
 
 	clientLog := waLog.Stdout("CLIENT", "INFO", true)
 	client = whatsmeow.NewClient(deviceStore, clientLog)
+
+	client.AddEventHandler(HelloWorldHandler)
 
 	if client.Store.ID == nil {
 		qrChan, _ := client.GetQRChannel(context.Background())
