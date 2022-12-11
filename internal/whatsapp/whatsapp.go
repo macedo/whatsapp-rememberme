@@ -2,6 +2,7 @@ package whatsapp
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
@@ -18,11 +19,12 @@ type Service interface {
 	Stop()
 }
 
-func New(evtHandler *handler.EventHandler) Service {
+func New(db *sql.DB, evtHandler *handler.EventHandler) Service {
 	name := "WHATSAPP"
 	logLevel := "INFO"
 
 	return &WhatsApp{
+		db:         db,
 		evtHandler: evtHandler,
 		log:        waLog.Stdout(name, logLevel, true),
 		name:       name,
@@ -30,6 +32,7 @@ func New(evtHandler *handler.EventHandler) Service {
 }
 
 type WhatsApp struct {
+	db         *sql.DB
 	name       string
 	evtHandler *handler.EventHandler
 	log        waLog.Logger
@@ -57,10 +60,7 @@ func (s *WhatsApp) Stop() {
 func (s *WhatsApp) run() error {
 	log.Printf("service %s started", s.name)
 
-	container, err := sqlstore.New("sqlite3", "file:wpp_store.db?_foreign_keys=on", s.log.Sub("CLIENT"))
-	if err != nil {
-		return err
-	}
+	container := sqlstore.NewWithDB(s.db, "sqlite3", s.log.Sub("CLIENT"))
 
 	deviceStore, err := container.GetFirstDevice()
 	if err != nil {

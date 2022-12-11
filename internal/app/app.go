@@ -1,6 +1,7 @@
 package app
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
@@ -26,6 +27,11 @@ func Run() error {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
 
+	db, err := sql.Open("sqlite3", "file:wpp_store.db?_foreign_keys=on")
+	if err != nil {
+		return err
+	}
+
 	scheduler := chrono.NewDefaultTaskScheduler()
 	defer scheduler.Shutdown()
 
@@ -37,7 +43,7 @@ func Run() error {
 
 	evtHandler := handler.NewEventHandler(w, scheduler)
 
-	wa := whatsapp.New(evtHandler)
+	wa := whatsapp.New(db, evtHandler)
 	waCh := wa.Start()
 
 	select {
@@ -52,5 +58,5 @@ func Run() error {
 	log.Printf("shutting down")
 	wa.Stop()
 
-	return <-waCh
+	return nil
 }
