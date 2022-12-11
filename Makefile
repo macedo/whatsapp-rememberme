@@ -17,13 +17,13 @@ mk-build-dir:
 build-deps:
 	@go get -d -v ./...
 
-build-app: clean build-deps test
+build-app: clean build-deps
 	go build -o $(TARGET_FILE) cmd/app/main.go
 
 run-app:
-	@go build -o $(TARGET_FILE) cmd/app/main.go && go run .
+	@go run cmd/app/main.go
 
-build-all: clean mk-build-dir build-deps test
+build-all: clean mk-build-dir build-deps
 	GOOS=linux go build -o $(TARGET_FILE) cmd/app/main.go && zip -9 $(TARGET_FILE)-linux64.zip $(TARGET_FILE) && rm $(TARGET_FILE)
 	GOOS=windows go build -o $(TARGET_FILE) cmd/app/main.go && zip -9 $(TARGET_FILE)-win64.zip $(TARGET_FILE) && rm $(TARGET_FILE)
 	GOOS=darwin go build -o $(TARGET_FILE) cmd/app/main.go && zip -9 $(TARGET_FILE)-osx64.zip $(TARGET_FILE) && rm $(TARGET_FILE)

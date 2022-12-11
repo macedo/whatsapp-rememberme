@@ -15,7 +15,7 @@ make build-deps
 
 ### Running
 ```sh
-make run
+make run-app
 ```
 
 
