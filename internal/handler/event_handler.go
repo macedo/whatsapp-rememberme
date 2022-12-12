@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/goodsign/monday"
 	"github.com/olebedev/when"
 	"github.com/procyon-projects/chrono"
 	"go.mau.fi/whatsmeow"
@@ -37,27 +38,35 @@ func (h *EventHandler) Func(evt interface{}) {
 	switch evtType := evt.(type) {
 	case *events.Message:
 		message := parseConversation(evtType.Message.GetConversation())
-		fmt.Printf("%v\n", message)
 		switch message.Action {
 		case "remember me", "me lembra de":
-			fmt.Println("remember me program")
-
 			r, err := h.nlDTParser.Parse(message.Body, time.Now())
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			todo := strings.ReplaceAll(message.Body, message.Body[r.Index:r.Index+len(r.Text)], "")
-			todo = strings.TrimSpace(todo)
-
-			_, err = h.scheduler.Schedule(func(ctx context.Context) {
+			if r == nil {
 				h.waClient.SendMessage(context.TODO(), evtType.Info.Sender, "", &waProto.Message{
-					Conversation: proto.String(todo),
+					Conversation: proto.String("Desculpe, não entendi direito. Eu sou facilmente confundido. Talvez tente as palavras em uma ordem diferente. Isso geralmente funciona: me lembra de [o que] [quando]"),
 				})
-			}, chrono.WithTime(r.Time))
+			} else {
+				todo := strings.ReplaceAll(message.Body, message.Body[r.Index:r.Index+len(r.Text)], "")
+				todo = strings.TrimSpace(todo)
 
-			if err == nil {
-				log.Print("Task has been scheduled successfully.")
+				fmt.Println(r.Time)
+
+				_, err = h.scheduler.Schedule(func(ctx context.Context) {
+					h.waClient.SendMessage(context.TODO(), evtType.Info.Sender, "", &waProto.Message{
+						Conversation: proto.String(todo),
+					})
+				}, chrono.WithTime(r.Time))
+
+				if err == nil {
+					h.waClient.SendMessage(context.TODO(), evtType.Info.Sender, "", &waProto.Message{
+						Conversation: proto.String(fmt.Sprintf("Vou te lembrar de %s as %s", todo, monday.Format(r.Time, "15:04 de Monday dia 02 de January", monday.LocalePtBR))),
+					})
+					log.Print("Task has been scheduled successfully.")
+				}
 			}
 		default:
 			log.Printf("unhandled action %s", message.Action)
