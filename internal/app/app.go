@@ -2,18 +2,19 @@ package app
 
 import (
 	"database/sql"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/macedo/whatsapp-rememberme/internal/handler"
+	"github.com/macedo/whatsapp-rememberme/internal/store/sqlstore"
 	"github.com/macedo/whatsapp-rememberme/internal/whatsapp"
 	"github.com/olebedev/when"
 	"github.com/olebedev/when/rules"
 	"github.com/olebedev/when/rules/br"
 	"github.com/olebedev/when/rules/common"
 	"github.com/procyon-projects/chrono"
+	"github.com/rs/zerolog/log"
 )
 
 func Run() error {
@@ -21,17 +22,20 @@ func Run() error {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
 
-	log.Printf("connecting to database...")
-	db, err := sql.Open("sqlite3", "file:wpp_store.db?_foreign_keys=on")
+	dsn := "file:wpp_store.db?_foreign_keys=on"
+	log.Info().Str("dsn", dsn).Msg("connecting to database")
+	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		return err
 	}
 
-	log.Printf("starting task scheduler...")
+	container := sqlstore.NewWithDB(db, "sqlite3")
+
+	log.Info().Msg("starting task scheduler")
 	scheduler := chrono.NewDefaultTaskScheduler()
 	defer scheduler.Shutdown()
 
-	log.Printf("configuring parser...")
+	log.Info().Msg("configuring parser")
 	w := when.New(&rules.Options{
 		Distance: 10,
 	})
@@ -40,18 +44,18 @@ func Run() error {
 
 	evtHandler := handler.NewEventHandler(w, scheduler)
 
-	wa := whatsapp.New(db, evtHandler)
+	wa := whatsapp.New(container, evtHandler)
 	waCh := wa.Start()
 
 	select {
 	case err := <-waCh:
-		log.Printf("error: %v", err)
+		log.Error().Err(err).Msg("whatstapp client error")
 	case sig := <-sigCh:
-		log.Printf("got %v signal", sig)
+		log.Info().Msgf("got %v signal", sig)
 		break
 	}
 
-	log.Printf("shutting down")
+	log.Info().Msg("shutting down")
 	wa.Stop()
 
 	return nil
