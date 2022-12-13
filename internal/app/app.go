@@ -2,7 +2,6 @@ package app
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -17,24 +16,22 @@ import (
 	"github.com/procyon-projects/chrono"
 )
 
-// Common errors returned by this app.
-var (
-	ErrShutdown = fmt.Errorf("application was shutdown gracefully")
-)
-
 func Run() error {
 	// Setup signal handler
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
 
+	log.Printf("connecting to database...")
 	db, err := sql.Open("sqlite3", "file:wpp_store.db?_foreign_keys=on")
 	if err != nil {
 		return err
 	}
 
+	log.Printf("starting task scheduler...")
 	scheduler := chrono.NewDefaultTaskScheduler()
 	defer scheduler.Shutdown()
 
+	log.Printf("configuring parser...")
 	w := when.New(&rules.Options{
 		Distance: 10,
 	})
@@ -49,9 +46,8 @@ func Run() error {
 	select {
 	case err := <-waCh:
 		log.Printf("error: %v", err)
-		break
 	case sig := <-sigCh:
-		log.Printf("got signal %v", sig)
+		log.Printf("got %v signal", sig)
 		break
 	}
 

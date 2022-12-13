@@ -60,14 +60,14 @@ func (s *WhatsApp) Stop() {
 func (s *WhatsApp) run() error {
 	log.Printf("service %s started", s.name)
 
-	container := sqlstore.NewWithDB(s.db, "sqlite3", s.log.Sub("CLIENT"))
+	container := sqlstore.NewWithDB(s.db, "sqlite3", s.log.Sub("DATABASE"))
 
 	deviceStore, err := container.GetFirstDevice()
 	if err != nil {
 		return err
 	}
 
-	cli := whatsmeow.NewClient(deviceStore, s.log.Sub("DATABASE"))
+	cli := whatsmeow.NewClient(deviceStore, s.log.Sub("CLIENT"))
 	defer cli.Disconnect()
 
 	s.evtHandler.SetWAClient(cli)

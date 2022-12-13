@@ -53,8 +53,6 @@ func (h *EventHandler) Func(evt interface{}) {
 				todo := strings.ReplaceAll(message.Body, message.Body[r.Index:r.Index+len(r.Text)], "")
 				todo = strings.TrimSpace(todo)
 
-				fmt.Println(r.Time)
-
 				_, err = h.scheduler.Schedule(func(ctx context.Context) {
 					h.waClient.SendMessage(context.TODO(), evtType.Info.Sender, "", &waProto.Message{
 						Conversation: proto.String(todo),
@@ -65,7 +63,7 @@ func (h *EventHandler) Func(evt interface{}) {
 					h.waClient.SendMessage(context.TODO(), evtType.Info.Sender, "", &waProto.Message{
 						Conversation: proto.String(fmt.Sprintf("Vou te lembrar de %s as %s", todo, monday.Format(r.Time, "15:04 de Monday dia 02 de January", monday.LocalePtBR))),
 					})
-					log.Print("Task has been scheduled successfully.")
+					log.Printf("task has been scheduled successfully.")
 				}
 			}
 		default:

@@ -1,15 +1,18 @@
 package main
 
 import (
-	"log"
+	"fmt"
+	"os"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/macedo/whatsapp-rememberme/internal/app"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
-	err := app.Run()
-	if err != nil && err != app.ErrShutdown {
-		log.Fatalf("service stopped - %s", err)
+	if err := app.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "service stopped unexpectedly- %s", err)
+		os.Exit(1)
 	}
+
+	fmt.Println("bye....")
 }
