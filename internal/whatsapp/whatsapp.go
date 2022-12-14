@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/macedo/whatsapp-rememberme/internal/handler"
+	"github.com/macedo/whatsapp-rememberme/internal/handlers"
 	"github.com/macedo/whatsapp-rememberme/internal/logadapter"
 	"github.com/mdp/qrterminal"
 	"github.com/rs/zerolog/log"
@@ -14,7 +14,7 @@ import (
 	"go.mau.fi/whatsmeow/store/sqlstore"
 )
 
-func New(db *sql.DB, evtHandler *handler.EventHandler) *WhatsApp {
+func New(db *sql.DB, evtHandler *handlers.EventHandler) *WhatsApp {
 	return &WhatsApp{
 		db:         db,
 		evtHandler: evtHandler,
@@ -25,7 +25,7 @@ func New(db *sql.DB, evtHandler *handler.EventHandler) *WhatsApp {
 type WhatsApp struct {
 	db         *sql.DB
 	name       string
-	evtHandler *handler.EventHandler
+	evtHandler *handlers.EventHandler
 	ctx        context.Context
 	cancel     context.CancelFunc
 }

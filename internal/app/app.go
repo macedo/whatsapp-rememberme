@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/macedo/whatsapp-rememberme/internal/handler"
+	"github.com/macedo/whatsapp-rememberme/internal/handlers"
 	"github.com/macedo/whatsapp-rememberme/internal/server"
 	"github.com/macedo/whatsapp-rememberme/internal/whatsapp"
 	"github.com/olebedev/when"
@@ -40,7 +40,7 @@ func Run() error {
 	w.Add(common.All...)
 	w.Add(br.All...)
 
-	evtHandler := handler.NewEventHandler(w, scheduler)
+	evtHandler := handlers.NewEventHandler(w, scheduler)
 
 	wa := whatsapp.New(db, evtHandler)
 	defer wa.Stop()

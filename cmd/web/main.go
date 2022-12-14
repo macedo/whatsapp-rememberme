@@ -24,8 +24,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// close channels & db when appplication ends
-	//defer app.DB.SQL.Close()
+	// close channels & db when application ends
+	defer app.DB.SQL.Close()
 
 	// print info
 	log.Printf("******************************************")

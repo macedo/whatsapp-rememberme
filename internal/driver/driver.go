@@ -3,7 +3,12 @@ package driver
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
+
+	_ "github.com/jackc/pgconn"
+	_ "github.com/jackc/pgx/v4"
+	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
 type DB struct {
@@ -30,8 +35,10 @@ func ConnectPostgres(dsn string) (*DB, error) {
 
 	if err := d.Ping(); err != nil {
 		fmt.Println("Error!", err)
+		return dbConn, err
 	}
-	fmt.Println("*** pinged database successfully ***")
+
+	log.Println("*** pinged database successfully ***")
 
 	return dbConn, err
 }
