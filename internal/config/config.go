@@ -1,7 +1,11 @@
 package config
 
+import (
+	"github.com/macedo/whatsapp-rememberme/internal/driver"
+)
+
 type AppConfig struct {
-	DatabaseURL string
+	DB *driver.DB
 }
 
 func New() *AppConfig {
