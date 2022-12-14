@@ -7,7 +7,7 @@ import (
 	"syscall"
 
 	"github.com/macedo/whatsapp-rememberme/internal/handler"
-	"github.com/macedo/whatsapp-rememberme/internal/store/sqlstore"
+	"github.com/macedo/whatsapp-rememberme/internal/server"
 	"github.com/macedo/whatsapp-rememberme/internal/whatsapp"
 	"github.com/olebedev/when"
 	"github.com/olebedev/when/rules"
@@ -29,8 +29,6 @@ func Run() error {
 		return err
 	}
 
-	container := sqlstore.NewWithDB(db, "sqlite3")
-
 	log.Info().Msg("starting task scheduler")
 	scheduler := chrono.NewDefaultTaskScheduler()
 	defer scheduler.Shutdown()
@@ -44,10 +42,17 @@ func Run() error {
 
 	evtHandler := handler.NewEventHandler(w, scheduler)
 
-	wa := whatsapp.New(container, evtHandler)
+	wa := whatsapp.New(db, evtHandler)
+	defer wa.Stop()
 	waCh := wa.Start()
 
+	srv := server.New(db)
+	defer srv.Stop()
+	srvCh := srv.Start()
+
 	select {
+	case err := <-srvCh:
+		log.Error().Err(err).Msg("server error")
 	case err := <-waCh:
 		log.Error().Err(err).Msg("whatstapp client error")
 	case sig := <-sigCh:
@@ -56,7 +61,6 @@ func Run() error {
 	}
 
 	log.Info().Msg("shutting down")
-	wa.Stop()
 
 	return nil
 }

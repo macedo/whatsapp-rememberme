@@ -2,34 +2,28 @@ package whatsapp
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"os"
 
 	"github.com/macedo/whatsapp-rememberme/internal/handler"
 	"github.com/macedo/whatsapp-rememberme/internal/logadapter"
-	"github.com/macedo/whatsapp-rememberme/internal/store/sqlstore"
 	"github.com/mdp/qrterminal"
 	"github.com/rs/zerolog/log"
 	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/store/sqlstore"
 )
 
-type Service interface {
-	Start() <-chan error
-	Stop()
-}
-
-func New(container *sqlstore.Container, evtHandler *handler.EventHandler) Service {
-	name := "whatsapp"
-
+func New(db *sql.DB, evtHandler *handler.EventHandler) *WhatsApp {
 	return &WhatsApp{
-		container:  container,
+		db:         db,
 		evtHandler: evtHandler,
-		name:       name,
+		name:       "whatsapp",
 	}
 }
 
 type WhatsApp struct {
-	container  *sqlstore.Container
+	db         *sql.DB
 	name       string
 	evtHandler *handler.EventHandler
 	ctx        context.Context
@@ -50,13 +44,20 @@ func (s *WhatsApp) Start() <-chan error {
 }
 
 func (s *WhatsApp) Stop() {
+	log.Info().Str("service", s.name).Msg("service stopped")
 	s.cancel()
 }
 
 func (s *WhatsApp) run() error {
 	log.Info().Str("service", s.name).Msg("service started")
 
-	deviceStore, err := s.container.GetFirstDevice()
+	dbLog := log.With().Logger()
+	container := sqlstore.NewWithDB(s.db, "sqlite3", logadapter.WALogAdapter(dbLog))
+	if err := container.Upgrade(); err != nil {
+		return err
+	}
+
+	deviceStore, err := container.GetFirstDevice()
 	if err != nil {
 		return err
 	}

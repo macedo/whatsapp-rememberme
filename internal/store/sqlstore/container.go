@@ -3,16 +3,19 @@ package sqlstore
 import (
 	"database/sql"
 
-	"github.com/macedo/whatsapp-rememberme/internal/logadapter"
-	"github.com/rs/zerolog/log"
-	"go.mau.fi/whatsmeow/store/sqlstore"
+	"github.com/rs/zerolog"
 )
 
 type Container struct {
-	*sqlstore.Container
+	db      *sql.DB
+	dialect string
+	log     zerolog.Logger
 }
 
-func NewWithDB(db *sql.DB, dialect string) *Container {
-	dbLog := log.With().Str("module", "database").Logger()
-	return &Container{sqlstore.NewWithDB(db, dialect, logadapter.WALogAdapter(dbLog))}
+func NewWithDB(db *sql.DB, dialect string, log zerolog.Logger) *Container {
+	return &Container{
+		db:      db,
+		dialect: dialect,
+		log:     log,
+	}
 }
