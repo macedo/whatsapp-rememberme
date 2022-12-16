@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/alexedwards/scs/postgresstore"
 	"github.com/alexedwards/scs/v2"
 	"github.com/kataras/blocks"
 	"github.com/macedo/whatsapp-rememberme/internal/config"
@@ -56,6 +57,7 @@ func setupApp() (*string, error) {
 
 	session = scs.New()
 	session.Lifetime = 24 * time.Hour
+	session.Store = postgresstore.New(db.SQL)
 
 	app = config.AppConfig{
 		DB:           db,

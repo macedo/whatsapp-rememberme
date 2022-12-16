@@ -36,6 +36,7 @@ require (
 require (
 	filippo.io/edwards25519 v1.0.0 // indirect
 	github.com/AlekSi/pointer v1.2.0 // indirect
+	github.com/alexedwards/scs/postgresstore v0.0.0-20221206171621-0f0849773278
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/olebedev/when v0.0.0-20211212231525-59bd4edcf9d6

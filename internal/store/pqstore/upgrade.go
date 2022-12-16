@@ -9,6 +9,7 @@ type upgradeFunc func(*sql.Tx, *Container) error
 
 var Upgrades = [...]upgradeFunc{
 	upgradeV1,
+	upgradeV2,
 }
 
 func (c *Container) Upgrade() error {
@@ -68,7 +69,10 @@ func (c *Container) setVersion(tx *sql.Tx, version int) error {
 	return err
 }
 
-// - creates users table
+/*
+- create extensions uuid-osp/citext
+- creates users table and poopulate with admin user
+*/
 func upgradeV1(tx *sql.Tx, c *Container) (err error) {
 	_, err = tx.Exec(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`)
 	if err != nil {
@@ -93,6 +97,29 @@ func upgradeV1(tx *sql.Tx, c *Container) (err error) {
 	_, err = tx.Exec(`INSERT INTO users (username, encrypted_password)
 		VALUES ($1, $2)
 	`, "admin", c.App.Encryptor.MustDigest("admin"))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+/*
+	- create sessions table
+*/
+
+func upgradeV2(tx *sql.Tx, c *Container) (err error) {
+	_, err = tx.Exec(`CREATE TABLE IF NOT EXISTS sessions(
+		token TEXT,
+		data BYTEA NOT NULL,
+		expiry TIMESTAMPTZ NOT NULL,
+		CONSTRAINT sessions_pkey PRIMARY KEY (token)
+	)`)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`CREATE INDEX sessions_expiry_idx ON sessions (expiry)`)
 	if err != nil {
 		return err
 	}
