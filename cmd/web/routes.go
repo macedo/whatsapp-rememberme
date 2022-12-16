@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	"github.com/macedo/whatsapp-rememberme/internal/handlers"
 )
 
@@ -12,6 +13,7 @@ func routes() http.Handler {
 
 	mux.Use(SessionLoad)
 	mux.Use(NoSurf)
+	mux.Use(middleware.Logger)
 
 	mux.Get("/", handlers.SignInPageHandler)
 	mux.Post("/", handlers.SignInHandler)
