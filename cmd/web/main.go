@@ -1,20 +1,25 @@
 package main
 
 import (
+	"encoding/gob"
 	"log"
 	"net/http"
 	"os"
 	"runtime"
 	"time"
 
+	"github.com/alexedwards/scs/v2"
+	"github.com/google/uuid"
 	"github.com/macedo/whatsapp-rememberme/internal/config"
 )
 
 var app config.AppConfig
+var session *scs.SessionManager
 
 const version = "0.0.1"
 
 func init() {
+	gob.Register(uuid.UUID{})
 	_ = os.Setenv("TZ", "America/Sao_Paulo")
 }
 

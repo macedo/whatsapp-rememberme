@@ -1,31 +1,40 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"net/http"
-	"runtime/debug"
+
+	"github.com/justinas/nosurf"
 )
 
-// RecoverPanic recovers from a panic
-func RecoverPanic(next http.Handler) http.Handler {
+// Auth check user authetication
+func Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			if err := recover(); err != nil {
-				serverError(w, r, fmt.Errorf("%s", err))
-			}
-		}()
+		if !app.Session.Exists(r.Context(), "user_id") {
+			http.Redirect(w, r, "/", http.StatusFound)
+			return
+		}
+
+		w.Header().Set("Cache-Control", "no-store")
 		next.ServeHTTP(w, r)
 	})
 }
 
-func serverError(w http.ResponseWriter, r *http.Request, err error) {
-	trace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
-	_ = log.Output(2, trace)
+// NoSurf implements CSRF protection
+func NoSurf(next http.Handler) http.Handler {
+	csrfHandler := nosurf.New(next)
 
-	w.WriteHeader(http.StatusInternalServerError)
-	w.Header().Set("Connection", "close")
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0")
-	http.ServeFile(w, r, "./static/500.html")
+	csrfHandler.SetBaseCookie(http.Cookie{
+		HttpOnly: true,
+		Path:     "/",
+		Secure:   app.IsProduction,
+		SameSite: http.SameSiteStrictMode,
+		Domain:   app.Domain,
+	})
+
+	return csrfHandler
+}
+
+// SessionLoad loads the session on requests
+func SessionLoad(next http.Handler) http.Handler {
+	return session.LoadAndSave(next)
 }

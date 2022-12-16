@@ -3,10 +3,13 @@ module github.com/macedo/whatsapp-rememberme
 go 1.19
 
 require (
+	github.com/alexedwards/scs/v2 v2.5.0
 	github.com/go-chi/chi v1.5.4
 	github.com/goodsign/monday v1.0.0
+	github.com/google/uuid v1.3.0
 	github.com/jackc/pgconn v1.13.0
 	github.com/jackc/pgx/v4 v4.17.2
+	github.com/justinas/nosurf v1.1.1
 	github.com/kataras/blocks v0.0.7
 	github.com/mdp/qrterminal v1.0.1
 	github.com/rs/zerolog v1.28.0
@@ -39,7 +42,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/procyon-projects/chrono v1.1.2
 	go.mau.fi/libsignal v0.0.0-20221015105917-d970e7c3c9cf // indirect
-	golang.org/x/crypto v0.3.0 // indirect
+	golang.org/x/crypto v0.3.0
 	google.golang.org/protobuf v1.28.1
 	rsc.io/qr v0.2.0 // indirect
 )

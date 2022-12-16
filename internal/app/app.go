@@ -7,7 +7,6 @@ import (
 	"syscall"
 
 	"github.com/macedo/whatsapp-rememberme/internal/handlers"
-	"github.com/macedo/whatsapp-rememberme/internal/server"
 	"github.com/macedo/whatsapp-rememberme/internal/whatsapp"
 	"github.com/olebedev/when"
 	"github.com/olebedev/when/rules"
@@ -46,13 +45,7 @@ func Run() error {
 	defer wa.Stop()
 	waCh := wa.Start()
 
-	srv := server.New(db)
-	defer srv.Stop()
-	srvCh := srv.Start()
-
 	select {
-	case err := <-srvCh:
-		log.Error().Err(err).Msg("server error")
 	case err := <-waCh:
 		log.Error().Err(err).Msg("whatstapp client error")
 	case sig := <-sigCh:
