@@ -2,19 +2,19 @@ package main
 
 import (
 	"encoding/gob"
-	"log"
-	"net/http"
+	"fmt"
 	"os"
 	"runtime"
-	"time"
 
-	"github.com/alexedwards/scs/v2"
 	"github.com/google/uuid"
-	"github.com/macedo/whatsapp-rememberme/internal/config"
+	"github.com/macedo/whatsapp-rememberme/internal/app"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
-var app config.AppConfig
-var session *scs.SessionManager
+var cfg *viper.Viper
+
+var log *logrus.Logger
 
 const version = "0.0.1"
 
@@ -24,36 +24,53 @@ func init() {
 }
 
 func main() {
-	port, err := setupApp()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// close channels & db when application ends
-	defer app.DB.SQL.Close()
+	log = logrus.New()
 
 	// print info
-	log.Printf("******************************************")
-	log.Printf("** %sWhatsApp RememberMe%s v%s built in %s", "\033[31m", "\033[0m", version, runtime.Version())
-	log.Printf("**----------------------------------------")
-	log.Printf("** Running with %d Processors", runtime.NumCPU())
-	log.Printf("** Running on %s", runtime.GOOS)
-	log.Printf("******************************************")
+	fmt.Printf("******************************************\n")
+	fmt.Printf("** %sWhatsApp RememberMe%s v%sfmt built in %s\n", "\033[31m", "\033[0m", version, runtime.Version())
+	fmt.Printf("**----------------------------------------\n")
+	fmt.Printf("** Running with %d Processors\n", runtime.NumCPU())
+	fmt.Printf("** Running on %s\n", runtime.GOOS)
+	fmt.Printf("******************************************\n")
 
-	// create http server
-	srv := &http.Server{
-		Addr:              *port,
-		Handler:           routes(),
-		IdleTimeout:       30 * time.Second,
-		ReadTimeout:       30 * time.Second,
-		ReadHeaderTimeout: 5 * time.Second,
-		WriteTimeout:      5 * time.Second,
+	setEnvironment()
+
+	err := app.Run(cfg)
+	if err != app.ErrShutdown {
+		log.Fatalf("service stopped - %s", err)
 	}
 
-	log.Printf("starting HTTP server on port %s....", *port)
+	log.Infof("service shutdown - %s", err)
+}
 
-	// start server
-	if err := srv.ListenAndServe(); err != nil {
-		log.Fatal(err)
+func setEnvironment() {
+	cfg = viper.New()
+	cfg.AddConfigPath("./conf")
+	cfg.AllowEmptyEnv(true)
+	cfg.AutomaticEnv()
+
+	parseOptions()
+}
+
+func parseOptions() {
+	defaultOptions()
+
+	err := cfg.ReadInConfig()
+	if err != nil {
+		switch err.(type) {
+		case viper.ConfigFileNotFoundError:
+			log.Warnf("no config file found, loaded config from environment - default path ./config")
+		default:
+			log.Fatalf("error when fetching configuration - %s", err)
+		}
 	}
+}
+
+func defaultOptions() {
+	cfg.SetDefault("database_url", "postgres://postgres:postgres@localhost:15432/whatsapp_rememberme?sslmode=disable&timezone=UTC&connect_timeout=5")
+	cfg.SetDefault("domain", "localhost")
+	cfg.SetDefault("isProduction", false)
+	cfg.SetDefault("listen_addr", ":8080")
+	cfg.SetDefault("secret_key_base", "717c354e8cbfe8aba83e0897b2489314259d91805b02e9ca97e7a9e926406bd1119ec257cf3e77e7a2b8757e5041c49414523beb5086ccb406b14cbab5170535")
 }

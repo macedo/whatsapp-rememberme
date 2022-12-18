@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"net/http"
@@ -9,7 +9,7 @@ import (
 // Auth check user authetication
 func Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !app.Session.Exists(r.Context(), "user_id") {
+		if !session.Exists(r.Context(), "user_id") {
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
@@ -26,9 +26,9 @@ func NoSurf(next http.Handler) http.Handler {
 	csrfHandler.SetBaseCookie(http.Cookie{
 		HttpOnly: true,
 		Path:     "/",
-		Secure:   app.IsProduction,
+		Secure:   false,
 		SameSite: http.SameSiteStrictMode,
-		Domain:   app.Domain,
+		Domain:   cfg.GetString("domain"),
 	})
 
 	return csrfHandler

@@ -3,21 +3,17 @@ package pqstore
 import (
 	"database/sql"
 
-	"github.com/macedo/whatsapp-rememberme/internal/config"
-	"github.com/macedo/whatsapp-rememberme/internal/driver"
+	"github.com/macedo/whatsapp-rememberme/pkg/hash"
 )
 
-var app *config.AppConfig
-
 type Container struct {
-	App *config.AppConfig
-	DB  *sql.DB
+	DB        *sql.DB
+	Encryptor hash.Encryptor
 }
 
-func NewWithDB(db *driver.DB, a *config.AppConfig) *Container {
-	app = a
+func NewWithDB(db *sql.DB, envcryptor hash.Encryptor) *Container {
 	return &Container{
-		App: a,
-		DB:  db.SQL,
+		DB:        db,
+		Encryptor: envcryptor,
 	}
 }

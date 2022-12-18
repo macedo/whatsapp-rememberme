@@ -96,7 +96,7 @@ func upgradeV1(tx *sql.Tx, c *Container) (err error) {
 
 	_, err = tx.Exec(`INSERT INTO users (username, encrypted_password)
 		VALUES ($1, $2)
-	`, "admin", c.App.Encryptor.MustDigest("admin"))
+	`, "admin", c.Encryptor.MustDigest("admin"))
 	if err != nil {
 		return err
 	}
