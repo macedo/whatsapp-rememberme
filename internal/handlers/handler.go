@@ -8,6 +8,8 @@ import (
 	"github.com/kataras/blocks"
 	"github.com/macedo/whatsapp-rememberme/internal/store"
 	"github.com/macedo/whatsapp-rememberme/pkg/hash"
+	"go.mau.fi/whatsmeow"
+	wasqlstore "go.mau.fi/whatsmeow/store/sqlstore"
 )
 
 var encryptor hash.Encryptor
@@ -18,11 +20,24 @@ var session *scs.SessionManager
 
 var views *blocks.Blocks
 
-func Init(r store.Repository, s *scs.SessionManager, v *blocks.Blocks, e hash.Encryptor) {
+var waClients map[string]*whatsmeow.Client
+
+var waContainer *wasqlstore.Container
+
+func Init(
+	r store.Repository,
+	s *scs.SessionManager,
+	v *blocks.Blocks,
+	e hash.Encryptor,
+	cli map[string]*whatsmeow.Client,
+	c *wasqlstore.Container,
+) {
 	encryptor = e
 	repo = r
 	session = s
 	views = v
+	waClients = cli
+	waContainer = c
 }
 
 type TemplateData struct {

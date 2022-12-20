@@ -24,6 +24,8 @@ import (
 	"github.com/procyon-projects/chrono"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"go.mau.fi/whatsmeow"
+	wasqlstore "go.mau.fi/whatsmeow/store/sqlstore"
 )
 
 var (
@@ -50,12 +52,17 @@ var srv *http.Server
 
 var views *blocks.Blocks
 
+var waClients map[string]*whatsmeow.Client
+
+var waContainer *wasqlstore.Container
+
 func Run(c *viper.Viper) (err error) {
 	runCtx, runCancel = context.WithCancel(context.Background())
 
 	cfg = c
 
 	log = logrus.New()
+	log.SetLevel(logrus.DebugLevel)
 
 	secret_key_base := c.GetString("secret_key_base")
 	if secret_key_base == "" {
@@ -82,6 +89,7 @@ func Run(c *viper.Viper) (err error) {
 	session = scs.New()
 	session.Lifetime = 24 * time.Hour
 	session.Store = postgresstore.New(db)
+	session.Cookie.SameSite = http.SameSiteLaxMode
 
 	log.Infof("initializing store")
 	container := pqstore.NewWithDB(db, encryptor)
@@ -89,7 +97,24 @@ func Run(c *viper.Viper) (err error) {
 		return fmt.Errorf("could not upgrade database to last version - %s", err)
 	}
 
-	handlers.Init(container, session, views, encryptor)
+	waContainer = wasqlstore.NewWithDB(db, "postgres", nil)
+	if err = waContainer.Upgrade(); err != nil {
+		return fmt.Errorf("could not upgrade whatsmeow database to last version - %s", err)
+	}
+
+	devices, err := waContainer.GetAllDevices()
+	if err != nil {
+		return fmt.Errorf("could not get device - %s", err)
+	}
+	log.Debugf("found %d device(s)", len(devices))
+
+	waClients = make(map[string]*whatsmeow.Client, len(devices))
+	for _, device := range devices {
+		waClients[device.ID.String()] = whatsmeow.NewClient(device, nil)
+		defer waClients[device.ID.String()].Disconnect()
+	}
+
+	handlers.Init(container, session, views, encryptor, waClients, waContainer)
 
 	router := initialize_router()
 
@@ -105,10 +130,10 @@ func Run(c *viper.Viper) (err error) {
 	// Kick off gracefull shutdown go routine
 	go func() {
 		trap := make(chan os.Signal, 1)
-		signal.Notify(trap, syscall.SIGTERM)
+		signal.Notify(trap, syscall.SIGTERM, syscall.SIGINT)
 
 		s := <-trap
-		log.Infof("received shutdown signal %s", s)
+		log.Infof("received shutdown signal - %s", s)
 		Stop()
 	}()
 
@@ -137,9 +162,10 @@ func initialize_router() http.Handler {
 	mux := chi.NewRouter()
 
 	mux.Use(middleware.RequestID)
-	mux.Use(middleware.RequestLogger(log))
 	mux.Use(SessionLoad)
 	mux.Use(NoSurf)
+
+	mux.HandleFunc("/connect", handlers.ConnectHandler)
 
 	mux.Get("/", handlers.SignInPageHandler)
 	mux.Post("/", handlers.SignInHandler)
@@ -147,6 +173,8 @@ func initialize_router() http.Handler {
 	mux.Route("/admin", func(mux chi.Router) {
 		mux.Use(Auth)
 		mux.Get("/", handlers.AdminPageHandler)
+
+		mux.Get("/devices/new", handlers.NewDevicePageHandler)
 	})
 
 	// static files

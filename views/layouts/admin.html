@@ -7,7 +7,16 @@
     <title>Admin | WhatsApp RememberMe</title>
   </head>
   <body>
-    <h1>ADMIN</h1>
-    <p>{{.Flash}}</p>
+    {{ if .Flash }}
+      <p>{{.Flash}}</p>
+    {{ end }}
+    {{ template "content" . }}
+    <nav>
+      <ul>
+        <li><a href="/admin">Home</a></li>
+        <li><a href="/admin/devices/new">Connect new  device</a></li>
+      </ul>
+    </nav>
+    {{ block "js" . }}{{ end }}
   </body>
 </html>
