@@ -1,30 +1,14 @@
 TARGET_FILE:=${shell head -n1 go.mod | sed -r 's/.*\/(.*)/\1/g' }
 BUILD_DIR=.build
 
-.PHONY: target build run-app clean mk-build-dir build-deps build-app build-all
+.PHONY: target download install-tools
 
 target: build-app
 
-echo:
-	@echo $(TARGET_FILE)
+download: ## Download go.mod dependencies
+	echo Download go.mod dependencies
+	go mod download
 
-clean:
-	rm -rf $(TARGET_FILE) $(BUILD_DIR)
-
-mk-build-dir:
-	@mkdir -p ${BUILD_DIR}
-
-build-deps:
-	@go get -d -v ./...
-
-build-app: clean build-deps
-	go build -o $(TARGET_FILE) cmd/app/main.go
-
-run-app:
-	@go run cmd/app/main.go
-
-build-all: clean mk-build-dir build-deps
-	GOOS=linux go build -o $(TARGET_FILE) cmd/app/main.go && zip -9 $(TARGET_FILE)-linux64.zip $(TARGET_FILE) && rm $(TARGET_FILE)
-	GOOS=windows go build -o $(TARGET_FILE) cmd/app/main.go && zip -9 $(TARGET_FILE)-win64.zip $(TARGET_FILE) && rm $(TARGET_FILE)
-	GOOS=darwin go build -o $(TARGET_FILE) cmd/app/main.go && zip -9 $(TARGET_FILE)-osx64.zip $(TARGET_FILE) && rm $(TARGET_FILE)
-	mv *.zip ${BUILD_DIR}
+install-tools: download ## Install tools
+	echo Installing tools from tools/tools.go
+	go list -f '{{range .Imports}}{{.}} {{end}}' tools/tools.go | xargs go install

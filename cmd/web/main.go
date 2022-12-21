@@ -68,6 +68,7 @@ func parseOptions() {
 }
 
 func defaultOptions() {
+	cfg.SetDefault("app_env", "development")
 	cfg.SetDefault("database_url", "postgres://postgres:postgres@localhost:15432/whatsapp_rememberme?sslmode=disable&timezone=UTC&connect_timeout=5")
 	cfg.SetDefault("domain", "localhost")
 	cfg.SetDefault("isProduction", false)

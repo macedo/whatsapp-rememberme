@@ -1,0 +1,12 @@
+development:
+  provider: postgres
+  database: whatsapp_rememberme
+  user: postgres
+  password: postgres
+  host: localhost
+  pool: 5
+  port: 15432
+
+production:
+  provider: postgres
+  url: {{env "DATABASE_URL"}}

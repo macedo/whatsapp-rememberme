@@ -6,7 +6,7 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/justinas/nosurf"
 	"github.com/kataras/blocks"
-	"github.com/macedo/whatsapp-rememberme/internal/store"
+	"github.com/macedo/whatsapp-rememberme/internal/domain/repository"
 	"github.com/macedo/whatsapp-rememberme/pkg/hash"
 	"go.mau.fi/whatsmeow"
 	wasqlstore "go.mau.fi/whatsmeow/store/sqlstore"
@@ -14,7 +14,7 @@ import (
 
 var encryptor hash.Encryptor
 
-var repo store.Repository
+var repo repository.DatabaseRepo
 
 var session *scs.SessionManager
 
@@ -25,7 +25,7 @@ var waClients map[string]*whatsmeow.Client
 var waContainer *wasqlstore.Container
 
 func Init(
-	r store.Repository,
+	r repository.DatabaseRepo,
 	s *scs.SessionManager,
 	v *blocks.Blocks,
 	e hash.Encryptor,

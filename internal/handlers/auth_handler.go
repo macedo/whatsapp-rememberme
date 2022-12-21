@@ -34,7 +34,7 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := repo.GetUserByUsername(r.Form.Get("username"))
+	user, err := repo.GetUserByUsername(r.Context(), r.Form.Get("username"))
 	if err != nil {
 		log.Println(err)
 		session.Put(r.Context(), "flash", "The username or password is incorrect")

@@ -18,7 +18,8 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/kataras/blocks"
 	"github.com/macedo/whatsapp-rememberme/internal/handlers"
-	"github.com/macedo/whatsapp-rememberme/internal/store/pqstore"
+	"github.com/macedo/whatsapp-rememberme/internal/infrastructure/persistence"
+	"github.com/macedo/whatsapp-rememberme/internal/infrastructure/persistence/postgres"
 	"github.com/macedo/whatsapp-rememberme/pkg/hash"
 	"github.com/macedo/whatsapp-rememberme/pkg/middleware"
 	"github.com/procyon-projects/chrono"
@@ -80,22 +81,25 @@ func Run(c *viper.Viper) (err error) {
 	}
 
 	log.Infof("connecting to postgresql")
-	db, err = sql.Open("pgx", cfg.GetString("database_url"))
+	err = persistence.LoadConfigFile()
 	if err != nil {
-		return fmt.Errorf("could not establish postgres db connection - %s", err)
+		return err
 	}
+	conn := persistence.Connections[c.GetString("app_env")]
+	fmt.Printf("%v", conn)
+	db, err = conn.Open()
+	if err != nil {
+		return fmt.Errorf("could not establish postgres connection - %s", err)
+	}
+	defer db.Close()
+
+	dbrepo := postgres.NewRepo(db)
 
 	log.Infof("initializing session manager with postgresql backend")
 	session = scs.New()
 	session.Lifetime = 24 * time.Hour
 	session.Store = postgresstore.New(db)
 	session.Cookie.SameSite = http.SameSiteLaxMode
-
-	log.Infof("initializing store")
-	container := pqstore.NewWithDB(db, encryptor)
-	if err := container.Upgrade(); err != nil {
-		return fmt.Errorf("could not upgrade database to last version - %s", err)
-	}
 
 	waContainer = wasqlstore.NewWithDB(db, "postgres", nil)
 	if err = waContainer.Upgrade(); err != nil {
@@ -114,7 +118,7 @@ func Run(c *viper.Viper) (err error) {
 		defer waClients[device.ID.String()].Disconnect()
 	}
 
-	handlers.Init(container, session, views, encryptor, waClients, waContainer)
+	handlers.Init(dbrepo, session, views, encryptor, waClients, waContainer)
 
 	router := initialize_router()
 
