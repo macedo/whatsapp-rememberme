@@ -5,13 +5,16 @@ BUILD_DIR=.build
 
 target: dev
 
+build:
+	npx tailwindcss -i ./web/src/css/sign_in.css -o ./web/static/sign_in.bundle.css
+	go build -o server cmd/web/*.go
+
 clear:
-	rm -rf ./esbuild ./server
+	rm -rf ./server
 
 dev: clear
-	go build -o esbuild cmd/esbuild/*.go
 	go build -o server cmd/web/*.go
-	./esbuild &./server
+	npx tailwindcss -i ./web/src/css/sign_in.css -o ./web/static/sign_in.bundle.css --watch &./server
 
 download: ## Download go.mod dependencies
 	echo Download go.mod dependencies
