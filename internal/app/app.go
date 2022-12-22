@@ -75,7 +75,7 @@ func Run(c *viper.Viper) (err error) {
 	defer scheduler.Shutdown()
 
 	log.Infof("initializing template engine")
-	views = blocks.New("./views").Reload(true)
+	views = blocks.New("./web/views").Reload(true)
 	if err = views.Load(); err != nil {
 		return fmt.Errorf("could not load views - %s", err)
 	}
@@ -182,7 +182,7 @@ func initialize_router() http.Handler {
 	})
 
 	// static files
-	fileServer := http.FileServer(http.Dir("./static"))
+	fileServer := http.FileServer(http.Dir("./web/static"))
 	mux.Handle("/static/*", http.StripPrefix("/static", fileServer))
 
 	return mux
