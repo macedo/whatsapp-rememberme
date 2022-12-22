@@ -43,16 +43,17 @@
     {{ if .Flash }}
       {{ partial "partials/notification" . }}
     {{ end }}
-    <script>
-      function enter(element, transition) {
-
-      };
-    </script>
     <script type="module">
       import { Application, Controller } from "https://unpkg.com/@hotwired/stimulus/dist/stimulus.js";
       window.Stimulus = Application.start();
 
       Stimulus.register("notification", class extends Controller {
+        connect() {
+          setTimeout(() => {
+            this.element.remove();
+          }, 3000)
+        };
+
         close() {
           this.element.remove();
         }

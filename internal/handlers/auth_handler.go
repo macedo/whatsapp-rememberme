@@ -60,3 +60,12 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }
+
+func SignOutHandler(w http.ResponseWriter, r *http.Request) {
+	_ = session.RenewToken(r.Context())
+	_ = session.Destroy(r.Context())
+	_ = session.RenewToken(r.Context())
+
+	session.Put(r.Context(), "flash", "You've been logged out successfully!")
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}

@@ -173,6 +173,7 @@ func initialize_router() http.Handler {
 
 	mux.Get("/", handlers.SignInPageHandler)
 	mux.Post("/", handlers.SignInHandler)
+	mux.Get("/sign_out", handlers.SignOutHandler)
 
 	mux.Route("/admin", func(mux chi.Router) {
 		mux.Use(Auth)
