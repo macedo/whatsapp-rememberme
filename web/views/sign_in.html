@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="/static/sign_in.bundle.css" rel="stylesheet">
+    <link href="/static/application.bundle.css" rel="stylesheet">
     <title>SignIn | WhatsApp RememberMe</title>
   </head>
   <body class="h-full">
@@ -43,21 +43,6 @@
     {{ if .Flash }}
       {{ partial "partials/notification" . }}
     {{ end }}
-    <script type="module">
-      import { Application, Controller } from "https://unpkg.com/@hotwired/stimulus/dist/stimulus.js";
-      window.Stimulus = Application.start();
-
-      Stimulus.register("notification", class extends Controller {
-        connect() {
-          setTimeout(() => {
-            this.element.remove();
-          }, 3000)
-        };
-
-        close() {
-          this.element.remove();
-        }
-      });
-    </script>
+    <script src="/static/application.bundle.js"></script>
   </body>
 </html>
