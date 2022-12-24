@@ -16,8 +16,7 @@ import (
 	_ "github.com/jackc/pgconn"
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/kataras/blocks"
-	"github.com/macedo/whatsapp-rememberme/internal/handlers"
+	"github.com/macedo/whatsapp-rememberme/handlers"
 	"github.com/macedo/whatsapp-rememberme/internal/infrastructure/persistence"
 	"github.com/macedo/whatsapp-rememberme/internal/infrastructure/persistence/postgres"
 	"github.com/macedo/whatsapp-rememberme/pkg/hash"
@@ -51,8 +50,6 @@ var scheduler chrono.TaskScheduler
 
 var srv *http.Server
 
-var views *blocks.Blocks
-
 var waClients map[string]*whatsmeow.Client
 
 var waContainer *wasqlstore.Container
@@ -73,12 +70,6 @@ func Run(c *viper.Viper) (err error) {
 
 	scheduler = chrono.NewDefaultTaskScheduler()
 	defer scheduler.Shutdown()
-
-	log.Infof("initializing template engine")
-	views = blocks.New("./web/views").Reload(true)
-	if err = views.Load(); err != nil {
-		return fmt.Errorf("could not load views - %s", err)
-	}
 
 	log.Infof("connecting to postgresql")
 	err = persistence.LoadConfigFile()
@@ -118,7 +109,7 @@ func Run(c *viper.Viper) (err error) {
 		defer waClients[device.ID.String()].Disconnect()
 	}
 
-	handlers.Init(dbrepo, session, views, encryptor, waClients, waContainer)
+	handlers.Init(dbrepo, session, encryptor, waClients, waContainer)
 
 	router := initialize_router()
 
