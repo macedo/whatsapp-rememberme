@@ -12,15 +12,12 @@ import (
 
 	"github.com/alexedwards/scs/postgresstore"
 	"github.com/alexedwards/scs/v2"
-	"github.com/go-chi/chi"
 	_ "github.com/jackc/pgconn"
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/macedo/whatsapp-rememberme/handlers"
+	"github.com/macedo/whatsapp-rememberme/internal/handlers"
 	"github.com/macedo/whatsapp-rememberme/internal/infrastructure/persistence"
 	"github.com/macedo/whatsapp-rememberme/internal/infrastructure/persistence/postgres"
-	"github.com/macedo/whatsapp-rememberme/pkg/hash"
-	"github.com/macedo/whatsapp-rememberme/pkg/middleware"
 	"github.com/procyon-projects/chrono"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -35,8 +32,6 @@ var (
 var cfg *viper.Viper
 
 var db *sql.DB
-
-var encryptor hash.Encryptor
 
 var log *logrus.Logger
 
@@ -66,8 +61,6 @@ func Run(c *viper.Viper) (err error) {
 	if secret_key_base == "" {
 		return fmt.Errorf("secret_key_base need to be informed")
 	}
-	encryptor = hash.NewEncryptor(secret_key_base)
-
 	scheduler = chrono.NewDefaultTaskScheduler()
 	defer scheduler.Shutdown()
 
@@ -84,7 +77,8 @@ func Run(c *viper.Viper) (err error) {
 	}
 	defer db.Close()
 
-	dbrepo := postgres.NewRepo(db)
+	//dbrepo
+	_ = postgres.NewRepo(db)
 
 	log.Infof("initializing session manager with postgresql backend")
 	session = scs.New()
@@ -109,13 +103,9 @@ func Run(c *viper.Viper) (err error) {
 		defer waClients[device.ID.String()].Disconnect()
 	}
 
-	handlers.Init(dbrepo, session, encryptor, waClients, waContainer)
-
-	router := initialize_router()
-
 	srv = &http.Server{
 		Addr:              cfg.GetString("listen_addr"),
-		Handler:           router,
+		Handler:           handlers.Router(),
 		IdleTimeout:       30 * time.Second,
 		ReadTimeout:       30 * time.Second,
 		ReadHeaderTimeout: 30 * time.Second,
@@ -151,31 +141,4 @@ func Stop() {
 		log.Errorf("unexpected errow while shutting down HTTP server - %s", err)
 	}
 	defer runCancel()
-}
-
-func initialize_router() http.Handler {
-	mux := chi.NewRouter()
-
-	mux.Use(middleware.RequestID)
-	mux.Use(SessionLoad)
-	mux.Use(NoSurf)
-
-	mux.HandleFunc("/connect", handlers.ConnectHandler)
-
-	mux.Get("/", handlers.SignInPageHandler)
-	mux.Post("/", handlers.SignInHandler)
-	mux.Get("/sign_out", handlers.SignOutHandler)
-
-	mux.Route("/admin", func(mux chi.Router) {
-		mux.Use(Auth)
-		mux.Get("/", handlers.AdminPageHandler)
-
-		mux.Get("/devices/new", handlers.NewDevicePageHandler)
-	})
-
-	// static files
-	fileServer := http.FileServer(http.Dir("./web/static"))
-	mux.Handle("/static/*", http.StripPrefix("/static", fileServer))
-
-	return mux
 }

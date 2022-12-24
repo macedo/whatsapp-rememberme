@@ -10,8 +10,10 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/macedo/whatsapp-rememberme/internal/infrastructure/persistence"
-	"github.com/macedo/whatsapp-rememberme/pkg/osx"
+	"github.com/macedo/whatsapp-rememberme/pkg/env"
 )
+
+var ENV = env.Get("APP_ENV", "development")
 
 var (
 	down           *bool
@@ -28,14 +30,13 @@ func init() {
 }
 
 func main() {
-	env := osx.Getenv("ENV", "development")
-	if err := run(env, os.Args); err != nil {
+	if err := run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func run(env string, args []string) error {
+func run(args []string) error {
 	if len(args) < 2 {
 		return ErrInvalidArgument
 	}
@@ -47,7 +48,7 @@ func run(env string, args []string) error {
 	switch args[1] {
 	case "migrate":
 		migrateCmd.Parse(args[2:])
-		conn := persistence.Connections[env]
+		conn := persistence.Connections[ENV]
 
 		if *down {
 			return migrateDown(conn)
