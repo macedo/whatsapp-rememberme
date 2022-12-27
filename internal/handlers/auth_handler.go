@@ -4,73 +4,65 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/macedo/whatsapp-rememberme/pkg/env"
-	"github.com/macedo/whatsapp-rememberme/pkg/hash"
+	"github.com/macedo/whatsapp-rememberme/internal/app"
 )
 
-func SignInPageHandler(w http.ResponseWriter, r *http.Request) {
-	if session.Exists(r.Context(), "user_id") {
-		http.Redirect(w, r, "/admin", http.StatusSeeOther)
-		return
-	}
+func SignInPageHandler(c *app.Context) {
+	// if c.Session().Exists(c.Context, "user_id") {
+	// 	c.Redirect("/admin")
+	// 	return
+	// }
 
-	if err := renderPage(w, r, "sign_in", ""); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if err := c.Render(http.StatusOK, rr.HTML("sign_in")); err != nil {
+		log.Println(err)
+		c.Response().Write([]byte(err.Error()))
 	}
 }
 
-func SignInHandler(w http.ResponseWriter, r *http.Request) {
-	var err error
+// func SignInHandler(c *app.Context) {
+// 	var err error
 
-	err = session.RenewToken(r.Context())
-	if err != nil {
-		log.Println(err)
-		w.Write([]byte(err.Error()))
-		return
-	}
+// 	err = r.ParseForm()
+// 	if err != nil {
+// 		log.Println(err)
+// 		w.Write([]byte(err.Error()))
+// 		return
+// 	}
 
-	err = r.ParseForm()
-	if err != nil {
-		log.Println(err)
-		w.Write([]byte(err.Error()))
-		return
-	}
+// 	user, err := repo.GetUserByUsername(r.Context(), r.Form.Get("username"))
+// 	if err != nil {
+// 		log.Println(err)
+// 		c.Session().Flashes()
+// 		if err = renderPage(w, r, "sign_in", ""); err != nil {
+// 			log.Println(err)
+// 			return
+// 		}
+// 		return
+// 	}
 
-	user, err := repo.GetUserByUsername(r.Context(), r.Form.Get("username"))
-	if err != nil {
-		log.Println(err)
-		session.Put(r.Context(), "flash", "The username or password is incorrect")
-		if err = renderPage(w, r, "sign_in", ""); err != nil {
-			log.Println(err)
-			return
-		}
-		return
-	}
+// 	encryptor := hash.NewEncryptor(env.Get("SECRET", "pepper"))
 
-	encryptor := hash.NewEncryptor(env.Get("SECRET", "pepper"))
+// 	if ok := encryptor.Compare(user.EncryptedPassword, r.Form.Get("password")); !ok {
+// 		log.Println(err)
+// 		session.Put(r.Context(), "flash", "The email or password is incorrect.")
+// 		if err := renderPage(w, r, "sign_in", ""); err != nil {
+// 			log.Println(err)
+// 			return
+// 		}
+// 		return
+// 	}
 
-	if ok := encryptor.Compare(user.EncryptedPassword, r.Form.Get("password")); !ok {
-		log.Println(err)
-		session.Put(r.Context(), "flash", "The email or password is incorrect.")
-		if err := renderPage(w, r, "sign_in", ""); err != nil {
-			log.Println(err)
-			return
-		}
-		return
-	}
+// 	session.Put(r.Context(), "user_id", user.ID)
+// 	session.Put(r.Context(), "flash", "You've been signed in successfully!")
 
-	session.Put(r.Context(), "user_id", user.ID)
-	session.Put(r.Context(), "flash", "You've been signed in successfully!")
+// 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
+// }
 
-	http.Redirect(w, r, "/admin", http.StatusSeeOther)
-}
+// func SignOutHandler(c *app.Context) {
+// 	_ = session.RenewToken(r.Context())
+// 	_ = session.Destroy(r.Context())
+// 	_ = session.RenewToken(r.Context())
 
-func SignOutHandler(w http.ResponseWriter, r *http.Request) {
-	_ = session.RenewToken(r.Context())
-	_ = session.Destroy(r.Context())
-	_ = session.RenewToken(r.Context())
-
-	session.Put(r.Context(), "flash", "You've been logged out successfully!")
-	http.Redirect(w, r, "/", http.StatusSeeOther)
-}
+// 	session.Put(r.Context(), "flash", "You've been logged out successfully!")
+// 	http.Redirect(w, r, "/", http.StatusSeeOther)
+// }

@@ -3,50 +3,26 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/alexedwards/scs/v2"
-	"github.com/go-chi/chi"
-	"github.com/macedo/whatsapp-rememberme/internal/domain/repository"
-	"go.mau.fi/whatsmeow"
-	wasqlstore "go.mau.fi/whatsmeow/store/sqlstore"
+	"github.com/macedo/whatsapp-rememberme/internal/app"
 )
 
-var repo repository.DatabaseRepo
+func App() *app.App {
+	a := app.New()
 
-var session *scs.SessionManager
+	//a.Router().HandleFunc("/connect", ConnectHandler)
 
-var waClients map[string]*whatsmeow.Client
+	a.Router().Handle("/", app.Handler{App: a, Handler: SignInPageHandler}).Methods("GET")
+	a.Router().Handle("/", app.Handler{a, SignInHandler}).Methods("POST")
+	//a.Router().Handle("/sign_out", app.Handler{a, SignOutHandler}).Methods("GET")
 
-var waContainer *wasqlstore.Container
+	// mux.Route("/admin", func(mux chi.Router) {
+	// 	mux.Get("/", AdminPageHandler)
 
-func Router() http.Handler {
-	mux := chi.NewRouter()
-
-	mux.HandleFunc("/connect", ConnectHandler)
-
-	mux.Get("/", SignInPageHandler)
-	mux.Post("/", SignInHandler)
-	mux.Get("/sign_out", SignOutHandler)
-
-	mux.Route("/admin", func(mux chi.Router) {
-		mux.Get("/", AdminPageHandler)
-
-		mux.Get("/devices/new", NewDevicePageHandler)
-	})
+	// 	mux.Get("/devices/new", NewDevicePageHandler)
+	// })
 
 	fileServer := http.FileServer(http.Dir("./web/static"))
-	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
+	a.Router().PathPrefix("/static/").Handler(http.StripPrefix("/static/", fileServer))
 
-	return mux
-}
-
-func Init(
-	r repository.DatabaseRepo,
-	s *scs.SessionManager,
-	cli map[string]*whatsmeow.Client,
-	c *wasqlstore.Container,
-) {
-	repo = r
-	session = s
-	waClients = cli
-	waContainer = c
+	return a
 }

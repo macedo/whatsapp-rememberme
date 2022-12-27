@@ -3,10 +3,13 @@ package persistence
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 )
 
 var Connections = map[string]*Connection{}
+
+var db *sql.DB
 
 const (
 	maxOpenDBConn = 10
@@ -29,18 +32,28 @@ func NewConnection(connDetails *ConnectionDetails) (*Connection, error) {
 	return nil, fmt.Errorf("not valid provider %q", connDetails.Provider)
 }
 
-func (c *Connection) Open() (*sql.DB, error) {
+func DB() *sql.DB {
+	if db == nil {
+		log.Fatal(fmt.Errorf("database not initialized"))
+	}
+
+	return db
+}
+
+func (c *Connection) Open() error {
+	var err error
+
 	provider := c.provider
-	db, err := sql.Open(string(provider.Driver()), provider.URL())
+	db, err = sql.Open(string(provider.Driver()), provider.URL())
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	db.SetMaxOpenConns(maxOpenDBConn)
 	db.SetMaxIdleConns(maxIdleConn)
 	db.SetConnMaxLifetime(maxDBLifeTime)
 
-	return db, nil
+	return nil
 }
 
 func (c *Connection) URL() string {
